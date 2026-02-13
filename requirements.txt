@@ -1,0 +1,4 @@
+requests==2.32.*
+psycopg2-binary==2.9.*
+sodapy==2.2.*
+python-dotenv==1.1.*
