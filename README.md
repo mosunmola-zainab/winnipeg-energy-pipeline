@@ -6,7 +6,7 @@ This project is a production-grade ETL (Extract, Transform, Load) pipeline desig
 
 
 ## Tech Stack
-- **Language:** Python 3.12 (using `sodapy`, `psycopg2`, and `pandas`)
+- **Language:** Python 3.12 (using `sodapy`, `psycopg2`)
 - **Infrastructure:** Docker & Docker Compose for containerized microservices
 - **Database:** PostgreSQL 16 (optimized for analytical queries)
 - **CI/CD:** GitHub Actions for automated unit testing and quality assurance
