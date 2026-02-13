@@ -24,7 +24,6 @@ This project is a production-grade ETL (Extract, Transform, Load) pipeline desig
 The pipeline successfully processed the full dataset with the following results verified via SQL:
 - **Total Records Ingested:** 451,691
 - **Data Integrity:** 0 NULL values found in critical `amount_due` fields after transformation
-- **Top Billing Insight:** Identified a maximum billing record of **$4,122,940.47** for 266 Graham Ave.
 
 ## Getting Started
 
