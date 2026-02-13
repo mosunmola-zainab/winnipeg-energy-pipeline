@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS utility_billing (
+DROP TABLE IF EXISTS utility_billing;
+CREATE TABLE utility_billing (
     id                  SERIAL PRIMARY KEY,
     hydro_gas_id        BIGINT,
     account_number      BIGINT,
