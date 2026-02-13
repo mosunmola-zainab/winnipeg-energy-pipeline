@@ -4,7 +4,7 @@ import os
 from sodapy import Socrata
 
 
-def extract(limit: int = 50000) -> list[dict]:
+def extract(limit: int = 500000) -> list[dict]:
     # Read connection details from environment
     domain = os.environ["SOCRATA_DOMAIN"]
     dataset_id = os.environ["SOCRATA_DATASET_ID"]
