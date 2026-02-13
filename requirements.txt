@@ -2,3 +2,4 @@ requests==2.32.*
 sodapy==2.2.*
 psycopg2-binary==2.9.*  # connects python to PostgreSQL
 python-dotenv==1.1.*
+pytest
