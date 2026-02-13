@@ -40,16 +40,13 @@ def load(rows: list[dict]) -> int:
     placeholders = ", ".join(["%s"] * len(COLUMNS))
     sql = f"INSERT INTO utility_billing ({col_names}) VALUES ({placeholders})"
 
-    # Insert each row, pulling values in column order
-    inserted = 0
-    for row in rows:
-        values = [row.get(col) for col in COLUMNS]
-        cur.execute(sql, values)
-        inserted += 1
+    # Build list of tuples and insert all rows at once
+    all_values = [tuple(row.get(col) for col in COLUMNS) for row in rows]
+    cur.executemany(sql, all_values)
 
     # Commit all rows in one transaction
     conn.commit()
     cur.close()
     conn.close()
 
-    return inserted
+    return len(all_values)
