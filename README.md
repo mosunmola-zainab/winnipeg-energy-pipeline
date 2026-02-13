@@ -1,3 +1,6 @@
+![CI Pipeline](https://github.com/mosunmola-zainab/winnipeg-energy-pipeline/actions/workflows/ci.yml/badge.svg)
+
+
 # Winnipeg Energy Ingestion Pipeline
 
 ## Overview
