@@ -68,8 +68,10 @@ services:
     image: apache/airflow:2.9.0
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+      PYTHONPATH: /opt/airflow
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
     ports:
       - "8080:8080"
     command: airflow webserver
@@ -81,8 +83,10 @@ services:
     image: apache/airflow:2.9.0
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+      PYTHONPATH: /opt/airflow
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
     command: airflow scheduler
     depends_on:
       airflow-init:
