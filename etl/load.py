@@ -41,13 +41,17 @@ def load(rows: list[dict]) -> int:
     placeholders = ", ".join(["%s"] * len(COLUMNS))
     sql = f"INSERT INTO utility_billing ({col_names}) VALUES ({placeholders})"
 
-    # Build list of tuples and insert all rows at once
     all_values = [tuple(row.get(col) for col in COLUMNS) for row in rows]
-    cur.executemany(sql, all_values)
+    total = len(all_values)
+    batch_size = 10_000
 
-    # Commit all rows in one transaction
-    conn.commit()
+    for i in range(0, total, batch_size):
+        batch = all_values[i : i + batch_size]
+        cur.executemany(sql, batch)
+        conn.commit()
+        print(f"Loaded {min(i + batch_size, total)}/{total} rows")
+
     cur.close()
     conn.close()
 
-    return len(all_values)
+    return total
