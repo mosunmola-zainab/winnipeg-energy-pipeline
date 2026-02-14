@@ -124,5 +124,5 @@ The pipeline successfully processed the full dataset with the following results 
 - **Phase 1** - Core ETL pipeline (extract, transform, load)
 - **Phase 2** - Dockerized infrastructure with PostgreSQL and pgAdmin
 - **Phase 3** - CI/CD with GitHub Actions (tests + deploy)
-- **Phase 4** - Cloud migration (Terraform, AWS RDS, COPY loading, SSL)
-- **Phase 5** - Orchestration & scheduling with Apache Airflow *(scheduled for March 1st, 2026)*
+- **Phase 4** - Cloud migration (Terraform + AWS RDS)
+- **Phase 5** - Orchestration & scheduling with Apache Airflow
