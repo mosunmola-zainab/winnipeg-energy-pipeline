@@ -13,6 +13,29 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "aws_security_group" "rds" {
+  name        = "${var.project_name}-rds-sg"
+  description = "Allow inbound PostgreSQL traffic"
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    project = var.project_name
+  }
+}
+
 resource "aws_db_instance" "postgres" {
   identifier     = "${var.project_name}-db"
   engine         = "postgres"
@@ -26,8 +49,9 @@ resource "aws_db_instance" "postgres" {
   username = var.db_username
   password = var.db_password
 
-  skip_final_snapshot   = true
-  publicly_accessible   = true
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  skip_final_snapshot    = true
+  publicly_accessible    = true
 
   tags = {
     project = var.project_name

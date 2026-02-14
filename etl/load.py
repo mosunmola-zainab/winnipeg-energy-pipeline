@@ -14,7 +14,7 @@ def get_connection():
         dbname=os.environ["POSTGRES_DB"],
         user=os.environ["POSTGRES_USER"],
         password=os.environ["POSTGRES_PASSWORD"],
-        sslmode="require",
+        sslmode=os.environ.get("POSTGRES_SSLMODE", "prefer"),
     )
 
 
@@ -45,7 +45,7 @@ def load(rows: list[dict]) -> int:
     buf.seek(0)
 
     col_names = ", ".join(COLUMNS)
-    copy_sql = f"COPY utility_billing ({col_names}) FROM STDIN WITH CSV"
+    copy_sql = f"COPY utility_billing ({col_names}) FROM STDIN WITH CSV NULL ''"
     cur.copy_expert(copy_sql, buf)
 
     conn.commit()

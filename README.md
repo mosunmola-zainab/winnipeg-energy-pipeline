@@ -79,10 +79,6 @@ winnipeg_energy_pipeline/
 
 ## Getting Started
 
-### Prerequisites
-- Docker & Docker Compose
-- Git
-
 ### Installation & Execution
 
 1. **Clone the repository:**
@@ -116,9 +112,7 @@ python -m pytest tests/ -v
 ```
 
 ## Data Validation Results
-The pipeline successfully processed the full dataset with the following results verified via SQL:
-- **Total Records Ingested:** 451,691
-- **Data Integrity:** 0 NULL values in critical `amount_due` fields after transformation
+The pipeline successfully processed the full dataset with the **Total Records Ingested:** 451,691
 
 ## Phases
 - **Phase 1** - Core ETL pipeline (extract, transform, load)
