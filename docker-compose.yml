@@ -72,6 +72,7 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
+      - ./requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
     command: airflow webserver
@@ -87,6 +88,7 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
+      - ./requirements.txt:/requirements.txt
     command: airflow scheduler
     depends_on:
       airflow-init:
