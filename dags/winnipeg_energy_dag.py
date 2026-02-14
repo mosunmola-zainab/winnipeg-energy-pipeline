@@ -7,7 +7,7 @@ from etl.pipeline import run
 with DAG(
     dag_id="winnipeg_energy_etl",
     schedule="0 0 1 * *",
-    start_date=datetime(2025, 1, 1),
+    start_date=datetime(2026, 3, 1),
     catchup=False,
 ) as dag:
     run_etl = PythonOperator(
