@@ -1,8 +1,12 @@
 .env
+.env.*
+!.env.example
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
 pgdata/
+logs/
 terraform/.terraform/
 terraform/.terraform.lock.hcl
 terraform/terraform.tfstate

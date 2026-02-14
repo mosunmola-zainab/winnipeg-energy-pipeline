@@ -2,15 +2,14 @@
 
 from dotenv import load_dotenv
 
-# Load .env
-load_dotenv()
-
 from etl.extract import extract
 from etl.transform import transform
 from etl.load import get_connection, load
 
 
 def run():
+    load_dotenv()
+
     # Pull raw data from Socrata API
     raw = extract()
     print(f"Extracted {len(raw)} records")
@@ -21,11 +20,13 @@ def run():
 
     # Truncate to avoid duplicates on re-runs
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("TRUNCATE TABLE utility_billing")
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        cur = conn.cursor()
+        cur.execute("TRUNCATE TABLE utility_billing")
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
     print("Truncated utility_billing table")
 
     # Insert into PostgreSQL

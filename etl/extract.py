@@ -12,7 +12,9 @@ def extract(limit: int = 500000) -> list[dict]:
 
     # Connect and fetch rows
     client = Socrata(domain, app_token)
-    results = client.get(dataset_id, limit=limit)
-    client.close()
+    try:
+        results = client.get(dataset_id, limit=limit)
+    finally:
+        client.close()
 
     return results

@@ -36,20 +36,22 @@ COLUMNS = [
 
 def load(rows: list[dict]) -> int:
     conn = get_connection()
-    cur = conn.cursor()
+    try:
+        cur = conn.cursor()
 
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-    for row in rows:
-        writer.writerow(row.get(col, "") for col in COLUMNS)
-    buf.seek(0)
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        for row in rows:
+            writer.writerow(row.get(col, "") for col in COLUMNS)
+        buf.seek(0)
 
-    col_names = ", ".join(COLUMNS)
-    copy_sql = f"COPY utility_billing ({col_names}) FROM STDIN WITH CSV NULL ''"
-    cur.copy_expert(copy_sql, buf)
+        col_names = ", ".join(COLUMNS)
+        copy_sql = f"COPY utility_billing ({col_names}) FROM STDIN WITH CSV NULL ''"
+        cur.copy_expert(copy_sql, buf)
 
-    conn.commit()
-    cur.close()
-    conn.close()
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
 
     return len(rows)
