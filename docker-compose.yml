@@ -34,6 +34,7 @@ services:
       - .env
     volumes:
       - ./etl:/app/etl
+      - ./sql:/app/sql
 
 volumes:
   pgdata:
