@@ -1,5 +1,7 @@
 """Insert cleaned rows into the utility_billing table in PostgreSQL."""
 
+import csv
+import io
 import os
 import psycopg2
 
@@ -36,22 +38,18 @@ def load(rows: list[dict]) -> int:
     conn = get_connection()
     cur = conn.cursor()
 
-    # Build parameterized INSERT with %s placeholders for each column
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    for row in rows:
+        writer.writerow(row.get(col, "") for col in COLUMNS)
+    buf.seek(0)
+
     col_names = ", ".join(COLUMNS)
-    placeholders = ", ".join(["%s"] * len(COLUMNS))
-    sql = f"INSERT INTO utility_billing ({col_names}) VALUES ({placeholders})"
+    copy_sql = f"COPY utility_billing ({col_names}) FROM STDIN WITH CSV"
+    cur.copy_expert(copy_sql, buf)
 
-    all_values = [tuple(row.get(col) for col in COLUMNS) for row in rows]
-    total = len(all_values)
-    batch_size = 10_000
-
-    for i in range(0, total, batch_size):
-        batch = all_values[i : i + batch_size]
-        cur.executemany(sql, batch)
-        conn.commit()
-        print(f"Loaded {min(i + batch_size, total)}/{total} rows")
-
+    conn.commit()
     cur.close()
     conn.close()
 
-    return total
+    return len(rows)
