@@ -69,6 +69,7 @@ services:
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
       PYTHONPATH: /opt/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: "sodapy psycopg2-binary python-dotenv"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
@@ -85,6 +86,7 @@ services:
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
       PYTHONPATH: /opt/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: "sodapy psycopg2-binary python-dotenv"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
