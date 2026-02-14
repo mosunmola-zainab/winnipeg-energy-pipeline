@@ -51,7 +51,7 @@ jobs:
         POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
         POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+        SOCRATA_DOMAIN: ${{ secrets.SOCRATA_DOMAIN }}
         SOCRATA_DATASET_ID: ${{ secrets.SOCRATA_DATASET_ID }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
