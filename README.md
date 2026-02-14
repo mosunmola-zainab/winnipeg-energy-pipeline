@@ -55,6 +55,7 @@ AWS RDS PostgreSQL    Deploy on push to master
 ```
 winnipeg_energy_pipeline/
 ├── etl/
+│   ├── __init__.py
 │   ├── extract.py            # Socrata API client
 │   ├── transform.py          # Data cleaning & type-casting
 │   ├── load.py               # PostgreSQL COPY loading
@@ -68,12 +69,15 @@ winnipeg_energy_pipeline/
 ├── sql/
 │   └── init.sql              # Table schema (auto-runs on container start)
 ├── tests/
+│   ├── __init__.py
 │   └── test_transform.py     # Unit tests for the transform layer
 ├── .github/workflows/
 │   └── ci.yml                # GitHub Actions CI/CD pipeline
 ├── docker-compose.yml        # PostgreSQL + pgAdmin + ETL + Airflow services
 ├── Dockerfile
+├── Document.md               # Technical documentation of the codebase
 ├── requirements.txt
+├── .gitignore
 └── .env.example
 ```
 
