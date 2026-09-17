@@ -2,13 +2,21 @@
 
 This document walks through the entire codebase from the ground up, explaining every component, how it evolved, and the reasoning behind each decision. It follows the project's actual development timeline based on the git commit history.
 
+## Current Modernization Status
+
+Phases 1-5 below document the pipeline as originally built and are still an accurate description of the current, running implementation (single `utility_billing` table, monolithic ETL, Airflow-scheduled monthly load). Treat them as historical/current-v1 reference, not as a description of where the project is headed.
+
+The project is now being redesigned around a layered data architecture (bronze/silver/gold), stronger orchestration, data quality checks, observability, analytical/dimensional modelling, and — eventually — an agentic data-operations layer. **None of that redesign has been implemented yet.** The only modernization work completed so far is source-grain profiling of the raw dataset, documented in Phase 6 below, with the resulting decisions recorded in [`docs/data_modeling_decisions.md`](docs/data_modeling_decisions.md).
+
+Read Phases 1-5 as "how the v1 pipeline works today." Read Phase 6 and `docs/data_modeling_decisions.md` as "what we've learned so far about the source data, and what's still undecided."
+
 ---
 
 ## Phase 1: Core ETL Pipeline
 
 ### The Problem
 
-The City of Winnipeg publishes utility billing data (electricity and natural gas consumption) through its Open Data portal, powered by the Socrata platform. The dataset contains 451,691 records across 35 columns — covering account details, meter readings, service dates, and itemized charges. The data sits behind an API as raw JSON with every value returned as a string, regardless of its actual type.
+The City of Winnipeg publishes utility billing data (electricity and natural gas consumption) through its Open Data portal, powered by the Socrata platform. As of the most recent profiling snapshot (September 17, 2026; see [Phase 6](#phase-6-source-profiling-and-grain-validation)), the dataset contains 464,597 records across 35 columns — covering account details, meter readings, service dates, and itemized charges — and this count grows as the City appends new billing data. The data sits behind an API as raw JSON with every value returned as a string, regardless of its actual type.
 
 The goal: pull this data, clean it, and load it into a structured PostgreSQL database where it can be queried and analyzed.
 
@@ -48,7 +56,7 @@ The Socrata API returns all fields as strings. PostgreSQL needs proper types. Th
 
 **Timestamp fields (2 columns):** `service_from_date`, `service_to_date`. These are passed through as ISO-format strings because PostgreSQL's `TIMESTAMP` type handles ISO parsing natively.
 
-Both `_safe_int()` and `_safe_float()` return `None` on failure instead of raising exceptions. This is a deliberate choice — the API contains missing and malformed data, and crashing on a single bad value in a 451,691-row dataset is not acceptable. `None` maps to SQL `NULL`, which is the correct representation of missing data.
+Both `_safe_int()` and `_safe_float()` return `None` on failure instead of raising exceptions. This is a deliberate choice — the API contains missing and malformed data, and crashing on a single bad value in a dataset of hundreds of thousands of rows is not acceptable. `None` maps to SQL `NULL`, which is the correct representation of missing data.
 
 ```python
 def _safe_int(value):
@@ -64,7 +72,7 @@ The `int(float(value))` pattern handles the edge case where Socrata returns inte
 
 This module went through three iterations, each a significant performance improvement:
 
-**Version 1 — Individual inserts:** The original implementation used `cursor.execute()` in a loop. One SQL statement per row. For 451,691 rows, this meant 451,691 round trips to the database. Slow.
+**Version 1 — Individual inserts:** The original implementation used `cursor.execute()` in a loop. One SQL statement per row. For a dataset of hundreds of thousands of rows, this meant just as many round trips to the database. Slow.
 
 **Version 2 — `executemany` with batching (commit `b4891a9`, then `c9c5a5d`):** Switched to `cursor.executemany()`, which sends multiple rows per statement. Added batching in chunks of 10,000 rows with progress logging. Better, but `executemany` in psycopg2 still prepares and executes individual `INSERT` statements under the hood.
 
@@ -342,7 +350,7 @@ resource "aws_db_instance" "postgres" {
 ```
 
 Key decisions:
-- `db.t3.micro` with 20GB `gp2` storage — AWS free tier eligible, sufficient for ~450k rows
+- `db.t3.micro` with 20GB `gp2` storage — AWS free tier eligible, sufficient for the current ~465k-row dataset
 - `vpc_security_group_ids` — References the security group defined above to ensure port 5432 is open
 - `publicly_accessible = true` — allows the GitHub Actions runner and local development to connect directly. In a production setup, this would be `false` with a VPC and bastion host.
 - `skip_final_snapshot = true` — skips the RDS snapshot on deletion. Appropriate for a project where the data can be fully reconstructed from the API at any time.
@@ -426,6 +434,29 @@ After init completes, the webserver and scheduler start. Both services load the 
 
 ---
 
+## Phase 6: Source Profiling and Grain Validation
+
+### Why
+
+Before designing any downstream (bronze/silver/gold) model, the raw grain of the source feed needed to be established empirically rather than assumed. This phase profiled the raw Socrata feed directly — no transformation, casting, or deduplication applied — using [`analysis/profile_billing_grain.py`](analysis/profile_billing_grain.py). Full methodology, numbers, and example rows are in [`analysis/profiling_report.md`](analysis/profiling_report.md) and `analysis/data/duplicate_group_examples.csv`.
+
+### Confirmed findings (snapshot: 464,597 rows, profiled September 17, 2026)
+
+- `hydro_gas_id` is unique and non-null across all 464,597 rows in the current snapshot. It is the only column tested that behaves as a row-level identity key.
+- Candidate business keys built from account, meter, service type, service period, address, rate, billing units, and amount due are **not unique** — not individually, and not even in combination. The fullest key tested (`account_number + meter_number + actual_service_type + service_from_date + service_to_date + service_address + rate + billing_units + amount_due`) still had 4,600 duplicate groups (48,276 rows) in the snapshot.
+- The duplication is structural, not noise: `actual_service_type = 'OT'` records (non-metered flat-fee items, e.g. streetlights/signs) and a large share of `EL` records carry a null `meter_number`, so multiple genuinely distinct billed items can share identical account/meter/type/period values.
+- The safest current raw-record grain is **one source record per `hydro_gas_id`**. Records should not be deduplicated using business-key fields — alone or combined — without stronger evidence from the source system, since collapsing on those fields risks silently merging distinct billed line items.
+
+### Unresolved ambiguity
+
+- Whether `hydro_gas_id` is a genuine upstream source primary key, or an id assigned during Socrata's publishing pipeline, is not confirmed from the data alone.
+- Whether a null `meter_number` always means "legitimately unmetered service" versus a data-capture gap for some metered services is not confirmed (roughly 47% of `EL` records have a null `meter_number`).
+- Some duplicate groups mix many near-zero-`amount_due` rows with a single large-`amount_due` row under the same key, which may indicate a blend of line-level charge records and invoice-total-like records within the same `actual_service_type`. This has not been confirmed against source documentation.
+
+These open questions carry forward into `docs/data_modeling_decisions.md` and should be resolved — via source-system documentation or a subject-matter expert — before finalizing any dimensional grain.
+
+---
+
 ## Environment Configuration
 
 The `.env.example` file documents all required environment variables:
@@ -477,7 +508,7 @@ terraform/terraform.tfstate.backup  # Terraform state backup
 ```
 data.winnipeg.ca (Socrata API)
         |
-        | sodapy.Socrata.get() — 451,691 JSON records
+        | sodapy.Socrata.get() — 464,597 JSON records (grows over time)
         v
    extract.py
         |
