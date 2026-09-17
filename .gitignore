@@ -10,3 +10,4 @@ logs/
 terraform/.terraform/
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
+analysis/data/
