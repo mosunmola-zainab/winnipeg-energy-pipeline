@@ -6,9 +6,9 @@ This document walks through the entire codebase from the ground up, explaining e
 
 Phases 1-5 below document the pipeline as originally built and are still an accurate description of the current, running implementation (single `utility_billing` table, monolithic ETL, Airflow-scheduled monthly load). Treat them as historical/current-v1 reference, not as a description of where the project is headed.
 
-The project is now being redesigned around a layered data architecture (bronze/silver/gold), stronger orchestration, data quality checks, observability, analytical/dimensional modelling, and — eventually — an agentic data-operations layer. **None of that redesign has been implemented yet.** The only modernization work completed so far is source-grain profiling of the raw dataset, documented in Phase 6 below, with the resulting decisions recorded in [`docs/data_modeling_decisions.md`](docs/data_modeling_decisions.md).
+The project is now being redesigned around a layered data architecture (bronze/silver/gold), stronger orchestration, data quality checks, observability, analytical/dimensional modelling, and — eventually — an agentic data-operations layer. **None of that redesign has been implemented yet.** The only modernization work completed so far is source-grain profiling of the raw dataset, documented in Phase 6 below, with the resulting decisions recorded in [`data_modeling_decisions.md`](data_modeling_decisions.md).
 
-Read Phases 1-5 as "how the v1 pipeline works today." Read Phase 6 and `docs/data_modeling_decisions.md` as "what we've learned so far about the source data, and what's still undecided."
+Read Phases 1-5 as "how the v1 pipeline works today." Read Phase 6 and `data_modeling_decisions.md` as "what we've learned so far about the source data, and what's still undecided."
 
 ---
 
@@ -438,7 +438,7 @@ After init completes, the webserver and scheduler start. Both services load the 
 
 Before designing any downstream (bronze/silver/gold) model, the raw grain of the source feed needed to be established empirically rather than assumed. The raw Socrata feed was profiled directly on September 17, 2026 — no transformation, casting, or deduplication applied — against a 464,597-row snapshot. The profiling scripts and full reports are exploratory work kept locally rather than in this public repo.
 
-This profiling directly shaped the data-modeling decisions behind the redesign: the raw-record grain, why `hydro_gas_id` is preserved, why business-key deduplication is unsafe, and the facility-entity question. See [`docs/data_modeling_decisions.md`](docs/data_modeling_decisions.md) for the confirmed findings, decisions, and unresolved questions — they are not duplicated here.
+This profiling directly shaped the data-modeling decisions behind the redesign: the raw-record grain, why `hydro_gas_id` is preserved, why business-key deduplication is unsafe, and the facility-entity question. See [`data_modeling_decisions.md`](data_modeling_decisions.md) for the confirmed findings, decisions, and unresolved questions — they are not duplicated here.
 
 ---
 

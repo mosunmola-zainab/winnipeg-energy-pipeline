@@ -19,7 +19,7 @@ Do not assume planned architecture has already been implemented.
 Before making architectural or modelling changes, read:
 
 - `README.md`
-- `Document.md`
+- `docs/technical_history.md`
 - `docs/data_modeling_decisions.md`
 
 Treat documented decisions as the current source of truth unless they are explicitly changed.

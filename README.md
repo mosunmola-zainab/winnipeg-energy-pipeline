@@ -3,7 +3,7 @@
 ## Overview
 ETL pipeline that ingests municipal utility billing data from Winnipeg's Open Data portal into AWS RDS PostgreSQL, orchestrated by Apache Airflow on a monthly schedule. As of the September 17, 2026 profiling snapshot, the dataset contains 464,597 electricity and natural gas billing records.
 
-The project is currently being modernized toward a layered data architecture — see [Document.md](Document.md) for current status and technical history.
+The project is currently being modernized toward a layered data architecture — see [docs/technical_history.md](docs/technical_history.md) for current status and technical history.
 
 ## Tech Stack
 - **Language:** Python 3.12
@@ -18,7 +18,7 @@ The project is currently being modernized toward a layered data architecture —
 
 Socrata API → extract → type-cast/transform → PostgreSQL `COPY` load, scheduled monthly by Airflow. Deployed to AWS RDS via Terraform, with GitHub Actions running tests and deploying on push to `master`.
 
-See [Document.md](Document.md) for the detailed technical walkthrough of each stage.
+See [docs/technical_history.md](docs/technical_history.md) for the detailed technical walkthrough of each stage.
 
 ## Project Structure
 ```
@@ -44,7 +44,8 @@ winnipeg_energy_pipeline/
 │   └── ci.yml                # GitHub Actions CI/CD pipeline
 ├── docker-compose.yml        # PostgreSQL + pgAdmin + ETL + Airflow services
 ├── Dockerfile
-├── Document.md               # Technical documentation of the codebase
+├── docs/
+│   └── technical_history.md  # Technical documentation of the codebase
 ├── requirements.txt
 ├── .gitignore
 └── .env.example
