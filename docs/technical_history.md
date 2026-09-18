@@ -484,6 +484,12 @@ logs/                             # Airflow log files
 terraform/.terraform/             # Terraform provider binaries (hundreds of MB)
 terraform/terraform.tfstate       # Terraform state (contains sensitive values)
 terraform/terraform.tfstate.backup  # Terraform state backup
+analysis/data/                    # Cached raw snapshot + generated profiling data (local only)
+analysis/profiling_report.md      # Exploratory grain-profiling report (local only)
+analysis/entity_relationships_report.md  # Exploratory entity-relationship report (local only)
+analysis/profile_billing_grain.py # Exploratory grain-profiling script (local only)
+analysis/profile_entity_relationships.py  # Exploratory entity-relationship script (local only)
+CLAUDE.local.md                   # Personal agent-instruction overrides (not shared)
 ```
 
 ---
