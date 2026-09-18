@@ -37,6 +37,19 @@ These are open questions, not yet resolved:
 
 These should be resolved — via source-system documentation or a subject-matter expert — before any grain decision above is treated as final.
 
+## Decision: the source has no verified facility identifier
+
+No source column is a verified facility (physical site/building) identifier:
+
+- `account_number` is a billing construct that can change over the life of what appears to be the same physical service point.
+- `meter_number` is null for a large share of records and is not always stable to one address.
+- `service_address` is the most stable of the candidates but is free text, not perfectly 1:1 with account, and cannot rule out one address hosting multiple distinct facilities.
+- `customer_name` is a department/division label subject to formatting drift and reassignment over time, not a facility identifier.
+
+None of `account_number`, `meter_number`, `service_address`, or `customer_name` should independently be treated as a facility identifier.
+
+A facility entity may still be derivable later through enrichment/entity resolution — using `service_address`, `customer_name`, and account/meter context as matching attributes, combined with reliable external reference data. `service_address` in particular is a plausible matching attribute for that resolution, not a facility identifier on its own. Any future `dim_facility` would be an **enriched/conformed dimension** produced by that resolution process, not a direct copy or rename of a single source field. No such resolution logic is designed or implemented at this time.
+
 ## Direction, not design: Bronze/Silver/Gold
 
 A layered (bronze/silver/gold) architecture is the intended direction for the redesign. As of this writing, no table structure, dimension, fact table, or transformation for any layer has been designed. This document will be updated once those decisions are actually made.

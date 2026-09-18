@@ -436,24 +436,9 @@ After init completes, the webserver and scheduler start. Both services load the 
 
 ## Phase 6: Source Profiling and Grain Validation
 
-### Why
+Before designing any downstream (bronze/silver/gold) model, the raw grain of the source feed needed to be established empirically rather than assumed. The raw Socrata feed was profiled directly on September 17, 2026 — no transformation, casting, or deduplication applied — against a 464,597-row snapshot. The profiling scripts and full reports are exploratory work kept locally rather than in this public repo.
 
-Before designing any downstream (bronze/silver/gold) model, the raw grain of the source feed needed to be established empirically rather than assumed. This phase profiled the raw Socrata feed directly — no transformation, casting, or deduplication applied. The profiling script and full report are exploratory work kept locally rather than in this public repo; the confirmed findings below are the durable output of that investigation.
-
-### Confirmed findings (snapshot: 464,597 rows, profiled September 17, 2026)
-
-- `hydro_gas_id` is unique and non-null across all 464,597 rows in the current snapshot. It is the only column tested that behaves as a row-level identity key.
-- Candidate business keys built from account, meter, service type, service period, address, rate, billing units, and amount due are **not unique** — not individually, and not even in combination. The fullest key tested (`account_number + meter_number + actual_service_type + service_from_date + service_to_date + service_address + rate + billing_units + amount_due`) still had 4,600 duplicate groups (48,276 rows) in the snapshot.
-- The duplication is structural, not noise: `actual_service_type = 'OT'` records (non-metered flat-fee items, e.g. streetlights/signs) and a large share of `EL` records carry a null `meter_number`, so multiple genuinely distinct billed items can share identical account/meter/type/period values.
-- The safest current raw-record grain is **one source record per `hydro_gas_id`**. Records should not be deduplicated using business-key fields — alone or combined — without stronger evidence from the source system, since collapsing on those fields risks silently merging distinct billed line items.
-
-### Unresolved ambiguity
-
-- Whether `hydro_gas_id` is a genuine upstream source primary key, or an id assigned during Socrata's publishing pipeline, is not confirmed from the data alone.
-- Whether a null `meter_number` always means "legitimately unmetered service" versus a data-capture gap for some metered services is not confirmed (roughly 47% of `EL` records have a null `meter_number`).
-- Some duplicate groups mix many near-zero-`amount_due` rows with a single large-`amount_due` row under the same key, which may indicate a blend of line-level charge records and invoice-total-like records within the same `actual_service_type`. This has not been confirmed against source documentation.
-
-These open questions carry forward into `docs/data_modeling_decisions.md` and should be resolved — via source-system documentation or a subject-matter expert — before finalizing any dimensional grain.
+This profiling directly shaped the data-modeling decisions behind the redesign: the raw-record grain, why `hydro_gas_id` is preserved, why business-key deduplication is unsafe, and the facility-entity question. See [`docs/data_modeling_decisions.md`](docs/data_modeling_decisions.md) for the confirmed findings, decisions, and unresolved questions — they are not duplicated here.
 
 ---
 
@@ -533,34 +518,3 @@ Triggered by:
 - **Locally:** `docker-compose up --build` (one-shot ETL container)
 - **CI/CD:** GitHub Actions deploy job on push to `master`
 - **Scheduled:** Airflow DAG on the 1st of each month (with 2 retries on failure)
-
----
-
-## Code Review Fixes Applied
-
-During a final code review before release, several issues were identified and resolved:
-
-### Critical Fixes
-1. **Airflow services missing pipeline env vars** — The `airflow-webserver` and `airflow-scheduler` containers only had `AIRFLOW__DATABASE__SQL_ALCHEMY_CONN` set, not the pipeline's `POSTGRES_*` and `SOCRATA_*` variables. The DAG would crash with `KeyError` at runtime. Fixed by adding `env_file: .env` to both services.
-
-2. **Hardcoded `sslmode="require"` breaking local Docker** — The PostgreSQL Alpine container does not enable SSL, so the ETL container could not connect locally. Fixed by reading `POSTGRES_SSLMODE` from the environment with a default of `"prefer"`.
-
-3. **Empty strings causing `COPY` failures on typed columns** — `row.get(col, "")` wrote empty strings for `None` values. PostgreSQL's `COPY` interprets empty fields as empty strings, which fails on `NUMERIC`, `BIGINT`, `INTEGER`, and `TIMESTAMP` columns. Fixed by adding `NULL ''` to the `COPY` command, telling PostgreSQL to treat empty fields as SQL `NULL`.
-
-4. **RDS instance unreachable without security group** — The `aws_db_instance` was `publicly_accessible = true` but had no `vpc_security_group_ids`. AWS assigns the default VPC security group, which blocks all inbound traffic. Fixed by adding an `aws_security_group` resource that opens port 5432.
-
-### Medium Fixes
-5. **`load_dotenv()` at import time** — Moved from module-level to inside `run()` to prevent side effects when Airflow imports the module.
-
-6. **Connection leaks on exceptions** — Added `try/finally` blocks to `load()`, the truncation in `pipeline.py`, and `extract()` to ensure connections and clients are always closed.
-
-7. **`.gitignore` gaps** — Added `.env.*` (with `!.env.example` exception), `.pytest_cache/`, and `logs/` for Airflow.
-
-8. **No DAG retries** — Added `retries: 2` with `retry_delay: timedelta(minutes=5)` to the DAG's `default_args` for resilience against transient failures.
-
-### Low-Priority Fixes
-9. **Unused `AIRFLOW_UID`** — Removed from `.env.example` since it was never referenced in `docker-compose.yml`.
-
-10. **README project structure** — Added missing `__init__.py` files, `Document.md`, and `.gitignore` to the tree listing.
-
-11. **`.terraform.lock.hcl` gitignored incorrectly** — Removed from `.gitignore` since HashiCorp recommends committing it for reproducible provider versions.

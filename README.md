@@ -1,7 +1,9 @@
 # Winnipeg Energy Ingestion Pipeline
 
 ## Overview
-ETL pipeline that ingests municipal utility billing data from Winnipeg's Open Data portal into AWS RDS PostgreSQL. Processes 450,000+ electricity and natural gas consumption records, orchestrated by Apache Airflow on a monthly schedule.
+ETL pipeline that ingests municipal utility billing data from Winnipeg's Open Data portal into AWS RDS PostgreSQL, orchestrated by Apache Airflow on a monthly schedule. As of the September 17, 2026 profiling snapshot, the dataset contains 464,597 electricity and natural gas billing records.
+
+The project is currently being modernized toward a layered data architecture — see [Document.md](Document.md) for current status and technical history.
 
 ## Tech Stack
 - **Language:** Python 3.12
@@ -14,42 +16,9 @@ ETL pipeline that ingests municipal utility billing data from Winnipeg's Open Da
 
 ## Architecture
 
-### Data Flow
-```
-Socrata Open Data API
-        |
-        v
-  [ Extract ]    -->  Pull 450,000+ records via sodapy
-        |
-        v
-  [ Transform ]  -->  Type-cast 35 fields (Text, Int, Float, Timestamp)
-        |
-        v
-  [   COPY    ]  -->  PostgreSQL COPY into AWS RDS
-        |
-        v
-  [ Airflow ]   -->  Scheduler triggers pipeline on the 1st of each month
-```
+Socrata API → extract → type-cast/transform → PostgreSQL `COPY` load, scheduled monthly by Airflow. Deployed to AWS RDS via Terraform, with GitHub Actions running tests and deploying on push to `master`.
 
-### Infrastructure
-```
-Terraform             GitHub Actions
-    |                       |
-    v                       v
-AWS RDS PostgreSQL    Deploy on push to master
-    ^                       |
-    |                       v
-    +------  ETL Pipeline --+
-```
-
-| Layer             | Description |
-|-------------------|-------------|
-| **Extract**       | Connects to the Socrata API and pulls from the Winnipeg Utility Billing dataset (`49ge-5j9g`). |
-| **Transform**     | Type-casts 35 raw API fields into structured SQL types (Numeric, BigInt, Timestamps) with safe handling of missing/malformed data. |
-| **Load**          | Bulk loads data into PostgreSQL via the `COPY` command using `psycopg2.copy_expert`. Table is truncated before each run to prevent duplicates. |
-| **Orchestration** | Airflow DAG runs on a monthly cron schedule (`0 0 1 * *`), calling the ETL pipeline's `run()` function. |
-| **CI/CD**         | Pytest suite runs on every push/PR to `master`. Deploy job runs the pipeline after tests pass. |
-| **Infrastructure**| Terraform provisions the RDS instance with version-pinned AWS provider (`~> 5.0`). |
+See [Document.md](Document.md) for the detailed technical walkthrough of each stage.
 
 ## Project Structure
 ```
@@ -114,9 +83,6 @@ winnipeg_energy_pipeline/
 pip install -r requirements.txt
 python -m pytest tests/ -v
 ```
-
-## Data Validation Results
-The pipeline successfully processed the full dataset with the **Total Records Ingested:** 451,691
 
 ## Phases
 - **Phase 1** - Core ETL pipeline (extract, transform, load)
