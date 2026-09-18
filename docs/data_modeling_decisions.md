@@ -50,6 +50,25 @@ None of `account_number`, `meter_number`, `service_address`, or `customer_name` 
 
 A facility entity may still be derivable later through enrichment/entity resolution — using `service_address`, `customer_name`, and account/meter context as matching attributes, combined with reliable external reference data. `service_address` in particular is a plausible matching attribute for that resolution, not a facility identifier on its own. Any future `dim_facility` would be an **enriched/conformed dimension** produced by that resolution process, not a direct copy or rename of a single source field. No such resolution logic is designed or implemented at this time.
 
-## Direction, not design: Bronze/Silver/Gold
+## Bronze v1 Design
 
-A layered (bronze/silver/gold) architecture is the intended direction for the redesign. As of this writing, no table structure, dimension, fact table, or transformation for any layer has been designed. This document will be updated once those decisions are actually made.
+Bronze's structure has been agreed at a design level, based on direct inspection of the current ETL code and live checks against the Socrata API (see `technical_history.md` for the v1 pipeline this supersedes). No SQL or ETL code has been written yet — this section records the design, not an implementation.
+
+**Storage.** PostgreSQL, in a dedicated `bronze` schema, with three tables:
+- `bronze.ingestion_runs` — one row per ingestion attempt.
+- `bronze.utility_billing_raw` — one row per source record per run.
+- `bronze.current_snapshot` — a small pointer holding the `run_id` of the currently promoted successful run.
+
+**Grain and identity.** `bronze.utility_billing_raw`'s primary key is `(run_id, hydro_gas_id)` — no surrogate row id. Each row stores the source record as JSONB, largely as received from Socrata (no casting, no dropped fields). `hydro_gas_id` is also stored as its own column, not as a business transformation, but because it is the Socrata-designated row identifier (confirmed via the dataset's `rowIdentifierColumnId` metadata) and is needed for deterministic ordering and indexing. Bronze performs no business or type transformations.
+
+**Snapshots.** Full snapshots are preserved per `run_id` — the same `hydro_gas_id` recurs once per successful run, by design, not deduplicated across runs. A failed run must never replace the previous successful snapshot; `bronze.current_snapshot` only ever points at a run that completed and passed validation.
+
+**Extraction.** Pagination is ordered by `hydro_gas_id`, the deterministic ordering key. 50,000 rows per page is the current tested starting point, not a permanent invariant — it may change as evidence warrants. HTTP requests for each page use bounded retry/backoff.
+
+**Schema drift.** Each run records the set of source fields actually observed. A new non-critical field is recorded and warned about, not treated as a run failure.
+
+**Validation.** A missing or non-unique `hydro_gas_id` fails validation for a run — this is also structurally enforced by the `(run_id, hydro_gas_id)` primary key itself. Bronze v1 does not include an arbitrary row-count percentage threshold as a validation check.
+
+## Direction, not design: Silver/Gold
+
+A layered architecture is the intended direction for the redesign; Bronze's design is recorded above. Silver and Gold remain direction only — as of this writing, no table structure, dimension, fact table, or transformation has been designed for either layer. This document will be updated once those decisions are actually made.
