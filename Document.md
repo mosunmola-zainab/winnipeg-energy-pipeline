@@ -438,7 +438,7 @@ After init completes, the webserver and scheduler start. Both services load the 
 
 ### Why
 
-Before designing any downstream (bronze/silver/gold) model, the raw grain of the source feed needed to be established empirically rather than assumed. This phase profiled the raw Socrata feed directly — no transformation, casting, or deduplication applied — using [`analysis/profile_billing_grain.py`](analysis/profile_billing_grain.py). Full methodology, numbers, and example rows are in [`analysis/profiling_report.md`](analysis/profiling_report.md) and `analysis/data/duplicate_group_examples.csv`.
+Before designing any downstream (bronze/silver/gold) model, the raw grain of the source feed needed to be established empirically rather than assumed. This phase profiled the raw Socrata feed directly — no transformation, casting, or deduplication applied. The profiling script and full report are exploratory work kept locally rather than in this public repo; the confirmed findings below are the durable output of that investigation.
 
 ### Confirmed findings (snapshot: 464,597 rows, profiled September 17, 2026)
 

@@ -2,7 +2,7 @@
 
 This file records decisions actually made about the Winnipeg utility billing dataset's grain and identity. It reflects the current state of investigation only. It is not a design spec — no dimensions, fact tables, business rules, or deduplication logic have been defined yet.
 
-Source evidence for everything below is in [`analysis/profiling_report.md`](../analysis/profiling_report.md), produced by [`analysis/profile_billing_grain.py`](../analysis/profile_billing_grain.py) against a 464,597-row raw snapshot profiled September 17, 2026. See [`Document.md`](../Document.md), Phase 6, for narrative context.
+Source evidence for everything below comes from raw-grain profiling of a 464,597-row snapshot on September 17, 2026 (exploratory script and full report kept locally, not in this public repo). See [`Document.md`](../Document.md), Phase 6, for narrative context and the confirmed findings.
 
 ## Decision: raw grain is one record per `hydro_gas_id`
 
